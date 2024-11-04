@@ -72,7 +72,7 @@ const UserProfileForm = () => {
     }
 
     try {
-      const response = await axios.post('http://192.168.162.83:8000/userprofiles/create/', submitData, {
+      const response = await axios.post('http://192.168.10.83:8000/userprofiles/create/', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

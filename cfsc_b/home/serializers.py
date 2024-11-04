@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile, PoliceUser, Task, StaffUser, PoliceUser
+from .models import UserProfile, PoliceUser, Task, StaffUser, PoliceUser, Feedback, Broadcast
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,12 +23,8 @@ class UserProfileCreateSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'PoliceUser', 'description', 'created_at', 'completed']
+        fields = ['id', 'created_by', 'police_user', 'description', 'created_at', 'completed', 'completed_at']
 
-    def validate(self, data):
-        if not PoliceUser.objects.filter(id=data['PoliceUser'].id).exists():
-            raise serializers.ValidationError("Invalid PoliceUser ID")
-        return data
     
 class StaffUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,3 +37,20 @@ class PoliceUserSerializer(serializers.ModelSerializer):
         model = PoliceUser
         fields = ['id', 'Name', 'Profession', 'Email', 'token']
         read_only_fields = ['token']
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ['id', 'staff_user', 'police_user', 'feedback', 'rating', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
+    
+class BroadcastSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Broadcast
+        fields = ['id', 'staff_user', 'police_user', 'title', 'description', 'image', 'place', 'date', 'created_at']

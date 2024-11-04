@@ -6,8 +6,8 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 
 // API URLs
-const API_URL = 'http://192.168.162.83:8000/latlongs/';
-const PROFILE_API_URL = 'http://192.168.162.83:8000/profile_by_latlong/';
+const API_URL = 'http://192.168.10.83:8000/latlongs/';
+const PROFILE_API_URL = 'http://192.168.10.83:8000/profile_by_latlong/';
 
 const ClusteredMap = () => {
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -188,7 +188,7 @@ const ClusteredMap = () => {
 
           <ScrollView>
             <Image
-              source={{ uri: `http://192.168.162.83:8000${selectedProfile.photo}` }}
+              source={{ uri: `http://192.168.10.83:8000${selectedProfile.photo}` }}
               style={styles.profileImage}
             />
             <Text style={styles.profileText}>Name: {selectedProfile.name}</Text>

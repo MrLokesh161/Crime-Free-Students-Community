@@ -19,7 +19,7 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     try {
       // Make sure to replace this URL with your actual backend URL
-      const response = await axios.post('http://192.168.162.83:8000/login/', {
+      const response = await axios.post('http://192.168.10.83:8000/login/', {
         email: username,
         password: password
       });

@@ -2,9 +2,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
+from django.utils import timezone
 from django.http import JsonResponse
-from .models import StaffUser, PoliceUser, UserProfile, Task
-from .serializers import UserProfileSerializer, UserProfileCreateSerializer, TaskSerializer, StaffUserSerializer, PoliceUserSerializer
+from .models import StaffUser, PoliceUser, UserProfile, Task, Feedback, Broadcast, LoginRecord
+from .serializers import UserProfileSerializer, UserProfileCreateSerializer, TaskSerializer, StaffUserSerializer, PoliceUserSerializer, FeedbackSerializer, BroadcastSerializer
 import uuid
 
 @api_view(["GET"])
@@ -70,27 +71,42 @@ def create_user(request):
     else:
         return Response({'message': 'Invalid user type'}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['POST'])
 def login_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
     
+    # Attempt to authenticate as a staff user
     try:
         staff_user = StaffUser.objects.get(Email=email)
         if password == staff_user.Password:
-            return Response({'message': 'Login successful', 'user_type': 'staff'})
+            # Save login record for staff user using email
+            LoginRecord.objects.create(user_type='staff', email=staff_user.Email)
+            return Response({
+                'message': 'Login successful',
+                'user_type': 'staff',
+                'token': staff_user.token
+            }, status=status.HTTP_200_OK)
     except StaffUser.DoesNotExist:
         pass
 
+    # Attempt to authenticate as a police user
     try:
         police_user = PoliceUser.objects.get(Email=email)
         if password == police_user.Password:
-            return Response({'message': 'Login successful', 'user_type': 'police'})
+            # Save login record for police user using email
+            LoginRecord.objects.create(user_type='police', email=police_user.Email)
+            return Response({
+                'message': 'Login successful',
+                'user_type': 'police',
+                'token': police_user.token
+            }, status=status.HTTP_200_OK)
     except PoliceUser.DoesNotExist:
         pass
     
-    return Response({'message': 'Invalid email or password'}, status=400)
+    # If no user is found or password does not match
+    return Response({'message': 'Invalid email or password'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 def user_profile_list(request):
@@ -138,12 +154,33 @@ def task_list(request):
 
 @api_view(['POST'])
 def task_create(request):
-    if request.method == 'POST':
-        serializer = TaskSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    token = request.data.get('token')
+    police_user = request.data.get('police_user')
+    description = request.data.get('description')
+
+    # Validate that token, police_user, and description are provided
+    if not all([token, police_user, description]):
+        return Response({'message': 'Token, police_user, and description are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Find the PoliceUser based on the token
+    try:
+        created_by = PoliceUser.objects.get(token=token)
+    except PoliceUser.DoesNotExist:
+        return Response({'message': 'Invalid token provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Create the Task instance
+    task = Task(
+        created_by=created_by,
+        police_user=police_user,
+        description=description,
+        created_at=timezone.now(),
+        completed=False
+    )
+    task.save()
+
+    # Serialize the created Task to return in the response
+    serializer = TaskSerializer(task)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
 @api_view(['POST'])
@@ -238,3 +275,85 @@ def profile_by_latlong(request):
             {'message': 'No user found with the provided latitude and longitude'}, 
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+def get_user_by_token(token):
+    try:
+        staff_user = StaffUser.objects.get(token=token)
+        return staff_user, 'staff'
+    except StaffUser.DoesNotExist:
+        pass
+
+    try:
+        police_user = PoliceUser.objects.get(token=token)
+        return police_user, 'police'
+    except PoliceUser.DoesNotExist:
+        pass
+
+    return None, None
+
+
+@api_view(['POST'])
+def submit_feedback(request):
+    token = request.data.get('token')
+    feedback_text = request.data.get('feedback')
+    rating = request.data.get('rating', 1)
+
+    user, user_type = get_user_by_token(token)
+    if not user:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+    feedback = Feedback(feedback=feedback_text, rating=rating)
+    
+    if user_type == 'staff':
+        feedback.staff_user = user
+    elif user_type == 'police':
+        feedback.police_user = user
+
+    feedback.save()
+    serializer = FeedbackSerializer(feedback)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def feedback_list(request):
+    feedbacks = Feedback.objects.all() 
+    serializer = FeedbackSerializer(feedbacks, many=True) 
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def create_broadcast(request):
+
+    token = request.data.get('token')
+    
+    if not token:
+        return Response({'message': 'Token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Try to find the user based on the token
+    staff_user = StaffUser.objects.filter(token=token).first()
+    police_user = PoliceUser.objects.filter(token=token).first()
+
+    if not staff_user and not police_user:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Set the appropriate user in the broadcast
+    broadcast_data = request.data.copy()  # Make a copy of the request data
+    if staff_user:
+        broadcast_data['staff_user'] = staff_user.id
+    if police_user:
+        broadcast_data['police_user'] = police_user.id
+
+    serializer = BroadcastSerializer(data=broadcast_data)
+
+    if serializer.is_valid():
+        serializer.save()  # Save the new broadcast
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def broadcast_list(request):
+    
+    broadcasts = Broadcast.objects.all()
+    serializer = BroadcastSerializer(broadcasts, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

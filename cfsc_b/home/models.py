@@ -1,5 +1,9 @@
 from django.db import models
+from django.utils import timezone
 import uuid
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+
 
 class StaffUser(models.Model):
     Name = models.CharField(max_length=255)
@@ -66,10 +70,77 @@ class UserProfile(models.Model):
         return self.name
 
 class Task(models.Model):
-    PoliceUser = models.ForeignKey(PoliceUser, on_delete=models.CASCADE, related_name='tasks')
+    created_by = models.ForeignKey(PoliceUser, on_delete=models.CASCADE, related_name='created_tasks')
+    police_user = models.CharField(max_length=100)
     description = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
     completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Automatically set completed_at when completed is set to True
+        if self.completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        # Clear completed_at if completed is set back to False
+        elif not self.completed:
+            self.completed_at = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.description
+
+class Feedback(models.Model):
+    staff_user = models.ForeignKey(
+        'StaffUser', on_delete=models.CASCADE, null=True, blank=True, related_name='staff_feedbacks'
+    )
+    police_user = models.ForeignKey(
+        'PoliceUser', on_delete=models.CASCADE, null=True, blank=True, related_name='police_feedbacks'
+    )
+    feedback = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    rating = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        user = self.staff_user if self.staff_user else self.police_user
+        return f'Feedback from {user.Name} - Rating: {self.rating}'
+
+    def save(self, *args, **kwargs):
+        # Ensure only one of staff_user or police_user is set
+        if self.staff_user and self.police_user:
+            raise ValueError("Feedback can only be associated with either a StaffUser or a PoliceUser, not both.")
+        super().save(*args, **kwargs)
+
+class Broadcast(models.Model):
+    staff_user = models.ForeignKey(
+        'StaffUser', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='broadcasts'
+    )
+    police_user = models.ForeignKey(
+        'PoliceUser', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='broadcasts'
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    image = models.ImageField(upload_to='broadcast_images/', blank=True, null=True)
+    place = models.CharField(max_length=255)
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class LoginRecord(models.Model):
+    user_type = models.CharField(max_length=50)  # 'staff' or 'police'
+    email = models.EmailField()  # store the email of the user
+    login_time = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user_type.capitalize()} User {self.email} logged in at {self.login_time}"
+

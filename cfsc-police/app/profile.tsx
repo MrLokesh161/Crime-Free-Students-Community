@@ -15,7 +15,7 @@ const StudentProfile = () => {
     setLoading(true);
 
     try {
-      const response = await axios.get('http://192.168.162.83:8000/student-profile/', {
+      const response = await axios.get('http://192.168.10.83:8000/student-profile/', {
         params: {
           name,
           college_register_number: collegeRegisterNumber,

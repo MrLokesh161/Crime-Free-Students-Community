@@ -25,6 +25,134 @@ POST userprofiles/create/
     "vehicle_number": "KA-01-AB-1234"
 }
 
+--------------------------------------------------------------
+
+POST signup/
+
+Staff
+
+{
+    "user_type": "staff",
+    "name": "John Doe",
+    "email": "johndoe@example.com",
+    "password": "password123",
+    "profession": "Lecturer",
+    "college_name": "University of Example"
+}
+
+Police
+
+{
+    "user_type": "police",
+    "name": "Jane Smith",
+    "email": "janesmith@example.com",
+    "password": "securepassword",
+    "profession": "Detective"
+}
+
+--------------------------------------------------------------
 
 POST tasks/create/
 
+{
+"Token":"b17b58a4-aff7-42ec-a548-918e6e4d685e",
+"police_user":"SI",
+"description":"Summa oru testing"
+}
+
+--------------------------------------------------------------
+
+GET profile_by_latlong/?latitude=12.971598&longitude=77.594566
+
+Display details based on latitude & longitude
+
+--------------------------------------------------------------
+
+GET latlongs/ 
+
+Display all latitude & longitude
+
+--------------------------------------------------------------
+
+GET student-profile/?name=John Doe&college_register_number=CSE123456&college_name=ABC College
+
+Display Seperate Student details based on name & college register number & college name
+
+--------------------------------------------------------------
+
+GET tasks/ ( Need To Change )
+
+Display all task 
+
+--------------------------------------------------------------
+
+GET userprofiles/
+
+Display all Student task
+
+--------------------------------------------------------------
+
+POST login/
+
+{
+"email":"dsp@gmail.com",
+"password":"1"
+}
+
+Response
+
+
+{
+    "message": "Login successful",
+    "user_type": "police",
+    "token": "b17b58a4-aff7-42ec-a548-918e6e4d685e"
+}
+
+--------------------------------------------------------------
+
+POST redflag/
+
+{
+    "name": "John Doe",
+    "roll_number": "CSE123456",
+    "college": "ABC College",
+    "flagged_reason": "Inappropriate behavior",
+    "flagged_reason_image": "path/to/your/image.jpg"
+}
+
+--------------------------------------------------------------
+
+POST feedback/create/
+
+{
+    "token": "a289aeb0-9cf5-4e10-a916-93f0ceec6653",
+    "feedback": "nice service!",
+    "rating": 5
+}
+
+--------------------------------------------------------------
+
+GET feedback/
+
+Display all feedbacks
+
+--------------------------------------------------------------
+
+POST broadcast/create/
+
+{
+    "token": "a289aeb0-9cf5-4e10-a916-93f0ceec6653",
+    "title": "Safety Reminder",
+    "description": "Please ensure all doors are locked at night.",
+    "place": "College Campus",
+    "date": "2024-11-04"
+}
+
+
+--------------------------------------------------------------
+
+GET broadcast/
+
+Display all BroadCast
+
+--------------------------------------------------------------

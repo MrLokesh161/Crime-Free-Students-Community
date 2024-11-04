@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import UserProfile, StaffUser, PoliceUser, Task
+from .models import UserProfile, StaffUser, PoliceUser, Task, Feedback, Broadcast, LoginRecord
+from django import forms
+
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -67,8 +69,52 @@ class PoliceUserAdmin(admin.ModelAdmin):
     list_display = ('Name', 'Profession', 'Email')
     search_fields = ('Name', 'Profession', 'Email')
 
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('description', 'created_at', 'completed')
-    search_fields = ('description', 'created_at')
-    list_filter = ('created_at', 'completed')
+    readonly_fields = ('created_at',)
+    list_display = ('description', 'created_by', 'police_user', 'created_at', 'completed', 'completed_at')
+    list_filter = ('completed', 'created_at')
+    search_fields = ('description', 'police_user')
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    readonly_fields = ('created_at',)
+    list_display = ('get_user_name', 'get_user_type', 'feedback', 'rating', 'created_at')
+    search_fields = ('feedback', 'rating')
+    list_filter = ('rating', 'created_at')
+    ordering = ('-created_at',)
+
+    def get_user_name(self, obj):
+        """Display the name of the associated user."""
+        if obj.staff_user:
+            return obj.staff_user.Name
+        elif obj.police_user:
+            return obj.police_user.Name
+        return "Unknown"
+    get_user_name.short_description = 'User Name'
+
+    def get_user_type(self, obj):
+        """Display the type of the associated user."""
+        if obj.staff_user:
+            return "Staff"
+        elif obj.police_user:
+            return "Police"
+        return "Unknown"
+    get_user_type.short_description = 'User Type'
+
+
+@admin.register(Broadcast)
+class BroadcastAdmin(admin.ModelAdmin):
+    readonly_fields = ('created_at',)
+    list_display = ('title', 'place', 'created_at', 'staff_user', 'police_user')
+    search_fields = ('title', 'description', 'place')
+    list_filter = ('created_at',)
+
+
+@admin.register(LoginRecord)
+class LoginRecordAdmin(admin.ModelAdmin):
+    readonly_fields = ('login_time',)
+    list_display = ('user_type', 'login_time')
+    search_fields = ('user_type', 'login_time')
+    list_filter = ('user_type', 'login_time')

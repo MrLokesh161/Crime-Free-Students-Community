@@ -42,7 +42,7 @@ const RedFlagForm = () => {
     }
 
     try {
-      const response = await axios.post('http://192.168.162.83:8000/redflag/', formData, {
+      const response = await axios.post('http://192.168.10.83:8000/redflag/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
