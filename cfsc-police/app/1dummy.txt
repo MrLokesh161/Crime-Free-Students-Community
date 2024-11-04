@@ -1,0 +1,9 @@
+if (option === 'Map') {
+      navigation.navigate('map');
+    } else if (option === 'Location') {
+      navigation.navigate('location');
+    } else if (option === 'Dashboard') {
+      navigation.navigate('dashboard');
+    } else if (option === 'Mark a Flag') {
+      navigation.navigate('red');
+    }

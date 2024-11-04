@@ -1,0 +1,30 @@
+POST userprofiles/create/
+
+{
+    "token": "bfa10cc7-6246-4eda-9a7f-22ff332bba75",
+    "name": "John Doe",
+    "age": 25,
+    "aadhar_number": "123456789012",
+    "phone_number": "9876543210",
+    "email_id": "john.doe@example.com",
+    "course_name": "Computer Science",
+    "course_year": "Final Year",
+    "passingout_year": "2025",
+    "college_register_number": "CSE123456",
+    "college_name": "ABC College",
+    "parents_address": "123 Parent St.",
+    "parents_phone_number": "0123456789",
+    "present_residential_address": "456 Student Rd.",
+    "latitude": "12.971598",
+    "longitude": "77.594566",
+    "residency_name": "XYZ Residency",
+    "residency_ownername": "Mr. Owner",
+    "owner_phone_number": "0987654321",
+    "room_number": "101",
+    "previous_cases_count": 0,
+    "vehicle_number": "KA-01-AB-1234"
+}
+
+
+POST tasks/create/
+
