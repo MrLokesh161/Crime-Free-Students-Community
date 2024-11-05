@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const LoginScreen = () => {
@@ -16,17 +17,39 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const router = useRouter();
 
+  useEffect(() => {
+    const checkToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        console.log('Token:', token);
+        if (token) {
+          // Navigate to the home screen if the token is found
+          router.push('/home');
+        }
+      } catch (error) {
+        console.error('Error checking token:', error);
+      }
+    };
+
+    checkToken();
+  }, []);
+
   const handleLogin = async () => {
     try {
-      // Make sure to replace this URL with your actual backend URL
       const response = await axios.post('http://192.168.10.83:8000/login/', {
         email: username,
         password: password
       });
 
-      if (response.data.user_type === 'police') {
+      const { token, user_type } = response.data;
+
+      // Store token in AsyncStorage
+      await AsyncStorage.setItem('authToken', token);
+
+      // Navigate based on user_type
+      if (user_type === 'police') {
         router.push('/home'); // Navigate to home screen for police
-      } else if (response.data.user_type === 'staff') {
+      } else if (user_type === 'staff') {
         router.push('/staffhome'); // Navigate to staff home screen
       } else {
         Alert.alert('Login Failed', 'Invalid credentials.');

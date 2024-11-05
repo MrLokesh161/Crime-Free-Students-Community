@@ -23,11 +23,18 @@ const ClusteredMap = () => {
       try {
         const response = await fetch(API_URL);
         const data = await response.json();
-        setMarkers(data);
+        // Ensure latitude and longitude are numbers
+        const parsedData = data.map(marker => ({
+          ...marker,
+          latitude: Number(marker.latitude),
+          longitude: Number(marker.longitude),
+        }));
+        setMarkers(parsedData);
       } catch (error) {
         Alert.alert('Error', 'Failed to load marker data');
       }
     };
+    
 
     const getCurrentLocation = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();

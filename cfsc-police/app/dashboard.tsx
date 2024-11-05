@@ -1,10 +1,23 @@
 import React, { Component } from 'react';
-import { StyleSheet, View, ScrollView, Text, Button, ActivityIndicator, Image, TextInput } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  Text,
+  Button,
+  ActivityIndicator,
+  TextInput,
+  TouchableOpacity,
+  StatusBar,
+  Platform
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Table, Row, Rows } from 'react-native-table-component';
 import axios from 'axios';
 import AppConfig from '../AppConfig';
+import { useNavigation } from '@react-navigation/native';
 
-export default class DashboardPage extends Component {
+class DashboardPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -38,12 +51,10 @@ export default class DashboardPage extends Component {
       const response = await axios.get(`${AppConfig.apiBaseUrl}/userprofiles/`);
       const data = response.data;
 
-      // Implement pagination
       const startIndex = (currentPage - 1) * rowsPerPage;
       const endIndex = startIndex + rowsPerPage;
       const paginatedData = data.slice(startIndex, endIndex);
 
-      // Format data to match table columns
       const formattedData = paginatedData.map(row => [
         row.name, row.age, row.aadhar_number, row.phone_number, row.email_id,
         row.course_name, row.course_year, row.passingout_year, row.college_register_number,
@@ -70,13 +81,14 @@ export default class DashboardPage extends Component {
   handleSearch = (text) => {
     const { originalData } = this.state;
     const filteredData = originalData.filter(row =>
-      row[0].toLowerCase().includes(text.toLowerCase()) || // search by name
-      row[4].toLowerCase().includes(text.toLowerCase())    // search by email
+      row[0].toLowerCase().includes(text.toLowerCase()) ||
+      row[4].toLowerCase().includes(text.toLowerCase())
     );
     this.setState({ searchText: text, tableData: filteredData });
   };
 
   render() {
+    const { navigation } = this.props;
     const { tableHead, widthArr, tableData, loading, error, currentPage, searchText } = this.state;
 
     if (loading) {
@@ -93,10 +105,18 @@ export default class DashboardPage extends Component {
 
     return (
       <View style={styles.pageContainer}>
-        {/* Topbar */}
-        <View style={styles.topbar}>
-          <Text style={styles.topbarText}>CFSC</Text>
-          <Image source={require("../assets/images/icon.png")} style={styles.logo} />
+        <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Dashboard</Text>
+          <View style={{ width: 40 }} />
         </View>
 
         {/* Search Bar */}
@@ -109,7 +129,7 @@ export default class DashboardPage extends Component {
           />
         </View>
 
-        {/* Container for Table Data */}
+        {/* Table and Pagination */}
         <View style={styles.container}>
           <ScrollView horizontal>
             <View>
@@ -139,31 +159,36 @@ export default class DashboardPage extends Component {
   }
 }
 
+function DashboardPageWithNavigation(props) {
+  const navigation = useNavigation();
+  return <DashboardPage {...props} navigation={navigation} />;
+}
+
+export default DashboardPageWithNavigation;
+
 const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  topbar: {
-    width: '100%',
-    height: 90,
-    backgroundColor: '#1E90FF',
+  header: {
+    backgroundColor: '#1e293b',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
+    paddingBottom: 16,
     paddingHorizontal: 16,
   },
-  topbarText: {
-    fontSize: 20,
-    paddingTop: 30,
-    paddingLeft: 20,
-    fontWeight: 'bold',
-    color: 'white',
+  backButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#334155',
   },
-  logo: {
-    marginTop: 25,
-    width: 50,
-    height: 50,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   container: {
     flex: 1,
@@ -220,4 +245,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 });
-

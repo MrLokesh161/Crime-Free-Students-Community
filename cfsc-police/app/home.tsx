@@ -1,146 +1,293 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  Image, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  StatusBar,
+  Alert,
+  Dimensions,
+  Platform,
+  SafeAreaView
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width } = Dimensions.get('window');
+const cardWidth = (width - 48) / 2;
 
 const HomePage = () => {
   const navigation = useNavigation();
 
-  const handleOptionPress = (option) => {
-    if (option === 'Map') {
-      navigation.navigate('map');
-    } else if (option === 'Assign Duty') {
-      navigation.navigate('assignDuty');
-    } else if (option === 'Flagging') {
-      navigation.navigate('red');
-    } else if (option === 'Dashboard') {
-      navigation.navigate('dashboard');
-    } else if (option === 'Self Assign Task') {
-      navigation.navigate('selfAssignTask');
-    } else if (option === 'Feedback') {
-      navigation.navigate('feedback');
-    } else if (option === 'Broadcast') {
-      navigation.navigate('BroadcastPage');
-    }
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) {
+          navigation.replace('Login');
+        }
+      } catch (error) {
+        console.error('Error retrieving token:', error);
+      }
+    };
+    fetchToken();
+  }, []);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('authToken');
+              navigation.replace('login');
+            } catch (error) {
+              console.error('Error logging out:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
+  const menuItems = [
+    {
+      id: 1,
+      title: 'Maps - Scatter Area',
+      icon: 'map',
+      route: 'map',
+      backgroundColor: '#2563eb',
+    },
+    {
+      id: 2,
+      title: 'Assign Duty',
+      icon: 'assignment',
+      route: 'assignDuty',
+      backgroundColor: '#0891b2',
+    },
+    {
+      id: 3,
+      title: 'Mark a Flag',
+      icon: 'flag',
+      route: 'red',
+      backgroundColor: '#dc2626',
+    },
+    {
+      id: 4,
+      title: 'Dashboard',
+      icon: 'dashboard',
+      route: 'dashboard',
+      backgroundColor: '#4f46e5',
+    },
+    {
+      id: 5,
+      title: 'Self Assign Task',
+      icon: 'person',
+      route: 'selfAssignTask',
+      backgroundColor: '#0d9488',
+    },
+    {
+      id: 6,
+      title: 'Feedback',
+      icon: 'feedback',
+      route: 'feedback',
+      backgroundColor: '#7c3aed',
+    },
+    {
+      id: 7,
+      title: 'Broadcast',
+      icon: 'campaign',
+      route: 'broadcast',
+      backgroundColor: '#c026d3',
+    }
+  ];
+
   return (
-    <View style={ss.container}>
-      <View style={ss.topbar}>
-        <Text style={ss.topbarText}>CFSC</Text>
-        <Image source={require("../assets/images/icon.png")} style={ss.toplogo} />
-      </View>
-      <ScrollView contentContainerStyle={ss.scrollContainer}>
-        <Image
-          source={require("../assets/images/icon.png")}
-          style={ss.logo}
-        />
-        <Text style={ss.welcomeText}>Welcome, Officer!</Text>
-        <Text style={ss.title}>Select an Option</Text>
-        <View style={ss.optionsGrid}>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Map')}>
-            <Icon name="map" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Maps - Scatter Area</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Assign Duty')}>
-            <Icon name="assignment" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Assign Duty</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Flagging')}>
-            <Icon name="flag" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Mark a Flag</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Dashboard')}>
-            <Icon name="dashboard" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Self Assign Task')}>
-            <Icon name="person" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Self Assign Task</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Feedback')}>
-            <Icon name="feedback" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Feedback</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.optionCard} onPress={() => handleOptionPress('Broadcast')}>
-            <Icon name="broadcast-on-personal" size={32} color="#1E90FF" />
-            <Text style={ss.optionText}>Broadcast</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.logo}
+          />
+          <TouchableOpacity 
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          >
+            <Icon name="logout" size={24} color="#94a3b8" />
           </TouchableOpacity>
         </View>
+        
+        <View style={styles.headerBottom}>
+          <Text style={styles.welcomeText}>Welcome back</Text>
+          <Text style={styles.headerTitle}>Crime Free Students Community</Text>
+        </View>
+      </View>
+
+      {/* Quick Stats */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>12</Text>
+          <Text style={styles.statLabel}>Total Tasks</Text>
+        </View>
+        <View style={[styles.statBox, styles.statBoxMiddle]}>
+          <Text style={styles.statNumber}>85%</Text>
+          <Text style={styles.statLabel}>Completion</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>4</Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </View>
+      </View>
+
+      {/* Menu Grid */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.menuGrid}>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.card, { backgroundColor: item.backgroundColor }]}
+              onPress={() => navigation.navigate(item.route)}
+              activeOpacity={0.9}
+            >
+              <Icon name={item.icon} size={32} color="#fff" style={styles.cardIcon} />
+              <Text style={styles.cardTitle}>{item.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const ss = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
   },
-  topbar: {
-    width: '100%',
-    height: 90,
-    backgroundColor: '#1E90FF',
+  header: {
+    backgroundColor: '#1e293b',
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  topbarText: {
-    fontSize: 20,
-    paddingTop: 30,
-    paddingLeft: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  toplogo: {
-    marginTop: 25,
-    width: 50,
-    height: 50,
-  },
-  scrollContainer: {
-    alignItems: 'center',
-    padding: 20,
-    flexGrow: 1,
+  headerBottom: {
+    marginTop: 8,
   },
   logo: {
-    width: 115,
-    height: 130,
-    marginBottom: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#334155',
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 14,
+    color: '#94a3b8',
+    marginBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
+    color: '#fff',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: 20,
-  },
-  optionsGrid: {
-    width: '100%',
+  statsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-  },
-  optionCard: {
-    width: '40%',
+    padding: 16,
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 15,
+    marginHorizontal: 16,
+    marginTop: -20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 3,
   },
-  optionText: {
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statBoxMiddle: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  menuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    width: cardWidth,
+    height: 120,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardIcon: {
+    marginBottom: 12,
+  },
+  cardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E90FF',
-    marginTop: 10,
-    textAlign: 'center',
+    color: '#fff',
   },
 });
 
