@@ -4,6 +4,9 @@ from . import views
 
 urlpatterns = [
     path('test/', views.test, name='test'),
+
+    path('police/', views.AllPoliceUsers, name='police_list'),
+
     path('login/', views.login_view, name='login'),
     path('signup/', views.create_user, name='signup'),
     
@@ -12,6 +15,7 @@ urlpatterns = [
     
     path('tasks/', views.task_list, name='task_list'),
     path('tasks/create/', views.task_create, name='task_create'),
+    path('tasks/update/<int:task_id>/', views.task_update, name='task_update'),
     
     path('redflag/', views.red_flag, name='red_flag'),
     

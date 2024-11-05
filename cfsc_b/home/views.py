@@ -12,6 +12,12 @@ import uuid
 def test(request):
     return Response({"message": "API Working"})
 
+@api_view(['GET'])
+def AllPoliceUsers(request):
+    police_users = PoliceUser.objects.all()
+    serializer = PoliceUserSerializer(police_users, many=True)
+    return Response(serializer.data)
+
 
 @api_view(['POST'])
 def create_user(request):
@@ -147,10 +153,19 @@ def user_profile_create(request):
 
 @api_view(['GET'])
 def task_list(request):
-    if request.method == 'GET':
-        tasks = Task.objects.all()
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
+    token = request.query_params.get('token')
+    
+    if not token:
+        return Response({"detail": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = PoliceUser.objects.get(token=token)  # Ensure auth_token field is in your User model
+    except PoliceUser.DoesNotExist:
+        return Response({"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    tasks = Task.objects.filter(created_by=user)
+    serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data)
 
 @api_view(['POST'])
 def task_create(request):
@@ -182,6 +197,39 @@ def task_create(request):
     serializer = TaskSerializer(task)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+@api_view(['PUT'])
+def task_update(request, task_id):
+    token = request.data.get('token')
+    completed = request.data.get('completed')
+
+    # Validate that token and completed status are provided
+    if token is None or completed is None:
+        return Response({'message': 'Token and completed status are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Find the PoliceUser based on the token
+    try:
+        police_user = PoliceUser.objects.get(token=token)
+    except PoliceUser.DoesNotExist:
+        return Response({'message': 'Invalid token provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Find the Task by its ID
+    try:
+        task = Task.objects.get(id=task_id, created_by=police_user)
+    except Task.DoesNotExist:
+        return Response({'message': 'Task not found or you do not have permission to update it.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Update the completed status
+    task.completed = completed
+    if completed:
+        task.completed_at = timezone.now()
+    else:
+        task.completed_at = None  # Clear completed_at if the task is not completed
+
+    task.save()
+
+    # Serialize the updated Task to return in the response
+    serializer = TaskSerializer(task)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def red_flag(request):

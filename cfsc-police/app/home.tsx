@@ -10,7 +10,8 @@ import {
   Alert,
   Dimensions,
   Platform,
-  SafeAreaView
+  SafeAreaView,
+  Linking
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -48,7 +49,7 @@ const HomePage = () => {
           onPress: async () => {
             try {
               await AsyncStorage.removeItem('authToken');
-              navigation.replace('login');
+              navigation.replace('Login');
             } catch (error) {
               console.error('Error logging out:', error);
             }
@@ -89,26 +90,23 @@ const HomePage = () => {
     },
     {
       id: 5,
-      title: 'Self Assign Task',
-      icon: 'person',
-      route: 'selfAssignTask',
-      backgroundColor: '#0d9488',
-    },
-    {
-      id: 6,
       title: 'Feedback',
       icon: 'feedback',
       route: 'feedback',
       backgroundColor: '#7c3aed',
     },
     {
-      id: 7,
+      id: 6,
       title: 'Broadcast',
       icon: 'campaign',
       route: 'broadcast',
       backgroundColor: '#c026d3',
     }
   ];
+
+  const openWebsite = (url) => {
+    Linking.openURL(url);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -170,7 +168,27 @@ const HomePage = () => {
             </TouchableOpacity>
           ))}
         </View>
+
       </ScrollView>
+
+      <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Developed by 
+            <Text 
+              style={styles.footerLink} 
+              onPress={() => openWebsite('https://lokeshdev.co')}
+            >
+              {' '}Lokesh 
+            </Text> 
+            {' '}& 
+            <Text 
+              style={styles.footerLink} 
+              onPress={() => openWebsite('https://mukilan.co')}
+            >
+              {' '}Mukilan
+            </Text>
+          </Text>
+        </View>
     </SafeAreaView>
   );
 };
@@ -288,6 +306,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  footer: {
+    backgroundColor: '#1e293b',
+    padding: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    marginTop: 16,
+  },
+  footerText: {
+    color: '#fff',
+    textAlign: 'center',
+  },
+  footerLink: {
+    color: '#2563eb',
+    fontWeight: 'bold', // Optional: Make the link text bold
   },
 });
 
