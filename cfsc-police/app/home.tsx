@@ -28,7 +28,7 @@ const HomePage = () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
         if (!token) {
-          navigation.replace('Login');
+          navigation.replace('login');
         }
       } catch (error) {
         console.error('Error retrieving token:', error);

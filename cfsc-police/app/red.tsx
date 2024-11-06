@@ -1,205 +1,389 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Image, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView, 
+  Alert,
+  Image,
+  ActivityIndicator,
+  SafeAreaView,
+  Platform,
+  StatusBar,
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import axios from 'axios';
+
+
 
 const RedFlagForm = () => {
+  const navigation = useNavigation();
   const [name, setName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [college, setCollege] = useState('');
-  const [flaggedReason, setFlaggedReason] = useState('');
-  const [flaggedReasonImage, setFlaggedReasonImage] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
+  const [imageUri, setImageUri] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [token, setToken] = useState('');
 
-  const handleImagePick = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+  useEffect(() => {
+    getToken();
+  }, []);
+
+  const getToken = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      if (storedToken) {
+        setToken(storedToken);
+      }
+    } catch (error) {
+      console.error('Error getting token:', error);
+    }
+  };
+
+  const pickImage = async () => {
+    // Request permission to access the image library
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const [image, setImage] = useState(null);
+
+    if (permissionResult.granted === false) {
+      alert('Permission to access camera roll is required!');
+      return;
+    }
+
+    // Open image picker
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
       quality: 1,
     });
 
-    if (!result.canceled) {
-      setFlaggedReasonImage(result.uri);
+    if (!pickerResult.cancelled) {
+      setImage(pickerResult.uri); // Set picked image URI
     }
   };
 
   const handleSubmit = async () => {
-    if (!name || !rollNumber || !college || !flaggedReason) {
-      Alert.alert('Error', 'Please fill out all fields');
+    if (!name.trim() || !rollNumber.trim() || !college.trim() || !description.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('roll_number', rollNumber);
-    formData.append('college', college);
-    formData.append('flagged_reason', flaggedReason);
-
-    if (flaggedReasonImage) {
-      formData.append('flagged_reason_image', {
-        uri: flaggedReasonImage,
-        type: 'image/jpeg',
-        name: 'flagged_reason_image.jpg',
-      } as any);
-    }
+    setIsLoading(true);
 
     try {
-      const response = await axios.post('http://192.168.10.83:8000/redflag/', formData, {
+      const response = await fetch('YOUR_API_BASE_URL/redflag/create/', {
+        method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          token: token,
+          name: name,
+          rollNumber: rollNumber,
+          college: college,
+          description: description,
+          imageUri: imageUri,  // You can modify how you handle the image
+        }),
       });
-      Alert.alert('Success', 'Red flag report submitted successfully');
-      setName('');
-      setRollNumber('');
-      setCollege('');
-      setFlaggedReason('');
-      setFlaggedReasonImage(null);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Red flag reported successfully', [
+          {
+            text: 'OK',
+            onPress: () => {
+              setName('');
+              setRollNumber('');
+              setCollege('');
+              setDescription('');
+              setImageUri('');
+              navigation.goBack();
+            },
+          },
+        ]);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to report red flag');
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit red flag report');
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topbar}>
-        <Text style={styles.topbarText}>CFSC</Text>
-        <Image source={require("../assets/images/icon.png")} style={styles.logo} />
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Icon name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Report Red Flag</Text>
+        <View style={{ width: 40 }}>{/* Placeholder for alignment */}</View>
       </View>
-      <ScrollView style={styles.form}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Enter your name"
-          placeholderTextColor="#888"
-        />
 
-        <Text style={styles.label}>Roll Number</Text>
-        <TextInput
-          style={styles.input}
-          value={rollNumber}
-          onChangeText={setRollNumber}
-          placeholder="Enter your roll number"
-          placeholderTextColor="#888"
-        />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Your Name</Text>
+            <View style={styles.inputWrapper}>
+              <Icon name="person" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your name"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+          </View>
 
-        <Text style={styles.label}>College</Text>
-        <TextInput
-          style={styles.input}
-          value={college}
-          onChangeText={setCollege}
-          placeholder="Enter your college"
-          placeholderTextColor="#888"
-        />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Roll Number</Text>
+            <View style={styles.inputWrapper}>
+              <Icon name="account-circle" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your roll number"
+                value={rollNumber}
+                onChangeText={setRollNumber}
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+          </View>
 
-        <Text style={styles.label}>Flagged Reason</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={flaggedReason}
-          onChangeText={setFlaggedReason}
-          placeholder="Enter reason for flagging"
-          placeholderTextColor="#888"
-          multiline
-          numberOfLines={4}
-        />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>College</Text>
+            <View style={styles.inputWrapper}>
+              <Icon name="school" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your college"
+                value={college}
+                onChangeText={setCollege}
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+          </View>
 
-        <TouchableOpacity style={styles.imagePicker} onPress={handleImagePick}>
-          <Text style={styles.imagePickerText}>Pick an Image</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Description</Text>
+            <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
+              <Icon name="description" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Describe the issue"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+          </View>
+
+          {/* Image Picker */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Upload Image</Text>
+            <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage}>
+            <Ionicons name="image-outline" size={24} color="#2563eb" />
+            <Text style={styles.imagePickerText}>Pick Image</Text>
+          </TouchableOpacity>
+
+          {/* Display picked image */}
+          {imageUri && (
+            <View style={styles.imagePreview}>
+              <Image source={{ uri: imageUri }} style={styles.image} />
+            </View>
+          )}
+          </View>
+        </View>
+  
+          {/* Submit Button */}
+          <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Icon name="check" size={24} color="#fff" style={styles.submitIcon} />
+              <Text style={styles.submitText}>Submit Red Flag</Text>
+            </>
+          )}
         </TouchableOpacity>
 
-        {flaggedReasonImage && (
-          <Image
-            source={{ uri: flaggedReasonImage }}
-            style={styles.image}
-          />
-        )}
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Submit Report</Text>
-        </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f7',
+    backgroundColor: '#f8fafc',
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
   },
-  topbar: {
-    width: '100%',
-    height: 90,
-    backgroundColor: '#1E90FF',
+  header: {
+    backgroundColor: '#1e293b', // Dark background for the header
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
+    paddingBottom: 16,
     paddingHorizontal: 16,
+    elevation: 4,
   },
-  topbarText: {
+  backButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#334155',
+  },
+  headerTitle: {
     fontSize: 20,
-    paddingTop: 30,
-    paddingLeft: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#fff',
+    textAlign: 'center',
+    flex: 1,
   },
-  logo: {
-    marginTop: 25,
-    width: 50,
-    height: 50,
+  content: {
+    padding: 26,
   },
-  form: {
-    padding: 20,
+  formSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  inputContainer: {
+    marginBottom: 16,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
+    color: '#1e293b',
+    marginBottom: 8,
+    textTransform: 'uppercase', // Uppercase for labels to add visual interest
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0', // Lighter border color for inputs
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  textAreaWrapper: {
+    alignItems: 'flex-start',
+  },
+  inputIcon: {
+    paddingRight: 12,
+    color: '#64748b', // Subtle color for input icons
   },
   input: {
-    height: 48,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 12,
-    marginBottom: 20,
-    paddingHorizontal: 12,
-    backgroundColor: 'white',
+    flex: 1,
     fontSize: 16,
+    color: '#1e293b',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
   },
   textArea: {
-    height: 120,
+    height: 100,
     textAlignVertical: 'top',
   },
-  imagePicker: {
-    backgroundColor: '#007AFF',
+  submitButton: {
+    backgroundColor: '#2563eb', // Blue button color
     borderRadius: 12,
-    paddingVertical: 12,
-    marginBottom: 20,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    opacity: 1,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#d1d5db', // Light gray background for disabled state
+    opacity: 0.6,
+  },
+  submitIcon: {
+    marginRight: 8,
+    color: '#fff',
+  },
+  submitText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  submitButtonHover: {
+    backgroundColor: '#1e40af', // Darker blue when hovered
+  },
+  inputFocused: {
+    borderColor: '#2563eb', // Highlighted border color for focused inputs
+  },
+  inputTextFocused: {
+    color: '#2563eb', // Text color changes when the input is focused
+  },
+  inputPlaceholder: {
+    color: '#94a3b8', // Placeholder color
+  },
+  imagePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
   },
   imagePickerText: {
-    color: 'white',
-    fontWeight: '600',
     fontSize: 16,
+    color: '#2563eb',
+    marginLeft: 8,
+  },
+  imagePreview: {
+    marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  submitButton: {
-    backgroundColor: '#34C759',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  submitButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+    marginTop: 8,
   },
 });
 

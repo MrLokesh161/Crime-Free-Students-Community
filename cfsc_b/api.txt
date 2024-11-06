@@ -103,7 +103,7 @@ Response
 
 
 {
-    "message": "Login successful",
+    "message"   : "Login successful",
     "user_type": "police",
     "token": "b17b58a4-aff7-42ec-a548-918e6e4d685e"
 }

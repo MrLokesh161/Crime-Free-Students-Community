@@ -1,141 +1,314 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  Image, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  StatusBar,
+  Alert,
+  Dimensions,
+  Platform,
+  SafeAreaView,
+  Linking
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width } = Dimensions.get('window');
+const cardWidth = (width - 48) / 2;
 
 const HomePage = () => {
   const navigation = useNavigation();
 
-  const handleOptionPress = (option) => {
-    if (option === 'Dashboard') {
-      navigation.navigate('dashboard');
-    } else if (option === 'Add Student') {
-      navigation.navigate('studentform'); 
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        console.log('Token:', token);
+        if (!token) {
+          navigation.replace('Login');
+        }
+      } catch (error) {
+        console.error('Error retrieving token:', error);
+      }
+    };
+    fetchToken();
+  }, []);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('authToken');
+              navigation.replace('login');
+            } catch (error) {
+              console.error('Error logging out:', error);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const menuItems = [
+    {
+      id: 1,
+      title: 'Student Register Form',
+      icon: 'assignment',
+      route: 'studentform',
+      backgroundColor: '#2563eb',
+    },
+    {
+      id: 2,
+      title: 'Dashboard',
+      icon: 'dashboard',
+      route: 'dashboard',
+      backgroundColor: '#4f46e5',
+    },
+    {
+      id: 3,
+      title: 'Report',
+      icon: 'feedback',
+      route: 'Report',
+      backgroundColor: '#7c3aed',
+    },
+    {
+      id: 4,
+      title: 'Broadcast',
+      icon: 'campaign',
+      route: 'broadcast',
+      backgroundColor: '#c026d3',
     }
+  ];
+
+  const openWebsite = (url) => {
+    Linking.openURL(url);
   };
 
   return (
-    <View style={ss.container}>
-        <View style={ss.topbar}>
-          <Text style={ss.topbarText}>CFSC</Text>
-          <Image source={require("../assets/images/icon.png")} style={ss.TOPlogo} />
-        </View>
-      <ScrollView contentContainerStyle={ss.scrollContainer}>
-        <Image
-          source={require("../assets/images/icon.png")}
-          style={ss.logo}
-        />
-        <Text style={ss.welcomeText}>Welcome, Staff!</Text>
-
-        {/* Replace Task Section with Quick Links */}
-        <Text style={ss.title}>Quick Links</Text>
-        <View style={ss.quickLinksContainer}>
-          <TouchableOpacity style={ss.linkButton} onPress={() => navigation.navigate('studentform')}>
-            <Text style={ss.linkText}>Student Form</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={ss.linkButton} onPress={() => navigation.navigate('reports')}>
-            <Text style={ss.linkText}>Generate Reports</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
       
-      <View style={ss.optionsContainer}>
-        <TouchableOpacity style={ss.optionButton} onPress={() => handleOptionPress('Dashboard')}>
-          <Icon name="dashboard" size={24} color="#007BFF" />
-          <Text style={ss.optionText}>Dashboard</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={ss.optionButton} onPress={() => handleOptionPress('Add Student')}>
-          <Icon name="person-add" size={24} color="#007BFF" />
-          <Text style={ss.optionText}>Add Student</Text>
-        </TouchableOpacity>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.logo}
+          />
+          <TouchableOpacity 
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          >
+            <Icon name="logout" size={24} color="#94a3b8" />
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.headerBottom}>
+          <Text style={styles.welcomeText}>Welcome back</Text>
+          <Text style={styles.headerTitle}>Crime Free Students Community</Text>
+        </View>
       </View>
-    </View>
+
+      {/* Quick Stats */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>35%</Text>
+          <Text style={styles.statLabel}>Day Scholar</Text>
+        </View>
+        <View style={[styles.statBox, styles.statBoxMiddle]}>
+          <Text style={styles.statNumber}>35%</Text>
+          <Text style={styles.statLabel}>Room Stay</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>30%</Text>
+          <Text style={styles.statLabel}>Hostelers</Text>
+        </View>
+      </View>
+
+      {/* Menu Grid */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.menuGrid}>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.card, { backgroundColor: item.backgroundColor }]}
+              onPress={() => navigation.navigate(item.route)}
+              activeOpacity={0.9}
+            >
+              <Icon name={item.icon} size={32} color="#fff" style={styles.cardIcon} />
+              <Text style={styles.cardTitle}>{item.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+      </ScrollView>
+
+      <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Developed by 
+            <Text 
+              style={styles.footerLink} 
+              onPress={() => openWebsite('https://lokeshdev.co')}
+            >
+              {' '}Lokesh 
+            </Text> 
+            {' '}& 
+            <Text 
+              style={styles.footerLink} 
+              onPress={() => openWebsite('https://mukilan.co')}
+            >
+              {' '}Mukilan
+            </Text>
+          </Text>
+        </View>
+    </SafeAreaView>
   );
 };
 
-const ss = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8fafc',
   },
-  topbar: {
-    width: '100%',
-    height: 90,
-    backgroundColor: '#1E90FF',
+  header: {
+    backgroundColor: '#1e293b',
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  topbarText: {
-    fontSize: 20,
-    paddingTop: 30,
-    paddingLeft: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  TOPlogo: {
-    marginTop: 25,
-    width: 50,
-    height: 50,
-  },
-  scrollContainer: {
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 20,
-    flexGrow: 1,
-    marginTop: 80,
+  headerBottom: {
+    marginTop: 8,
   },
   logo: {
-    width: 115,
-    height: 130,
-    marginBottom: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#334155',
   },
   welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: 10,
-  },
-  quickLinksContainer: {
-    width: '100%',
-    paddingHorizontal: 20,
-    marginBottom: 20, 
-  },
-  linkButton: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    marginVertical: 5,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 16,
-    color: '#007BFF',
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    backgroundColor: '#fff',
-  },
-  optionButton: {
-    alignItems: 'center',
-  },
-  optionText: {
     fontSize: 14,
-    color: '#007BFF',
-    marginTop: 5,
+    color: '#94a3b8',
+    marginBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: -20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statBoxMiddle: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  menuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    width: cardWidth,
+    height: 120,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardIcon: {
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  footer: {
+    backgroundColor: '#1e293b',
+    padding: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    marginTop: 16,
+  },
+  footerText: {
+    color: '#fff',
+    textAlign: 'center',
+  },
+  footerLink: {
+    color: '#2563eb',
+    fontWeight: 'bold', // Optional: Make the link text bold
   },
 });
 

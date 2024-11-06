@@ -395,7 +395,10 @@ def create_broadcast(request):
 
     if serializer.is_valid():
         serializer.save()  # Save the new broadcast
+        print("Broadcast created:", serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    print("Broadcast errors:", serializer.errors)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
