@@ -13,7 +13,6 @@ export default function RootLayout() {
       <Stack.Screen name="location" />
       <Stack.Screen name="dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="red" options={{ headerShown: false }} />
-      <Stack.Screen name="BroadcastPage" options={{ headerShown: false }} />
       <Stack.Screen name="assignDuty" options={{ headerShown: false }} />
       <Stack.Screen name="selfAssignTask" options={{ headerShown: false }} />
       <Stack.Screen name="feedback" options={{ headerShown: false }} />
